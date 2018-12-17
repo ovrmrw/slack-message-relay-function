@@ -16,7 +16,7 @@ export const messageRelay = functions.https.onRequest((req, res) => {
   const message: Message = req.body;
   if (message.event && message.event.text) {
     if (message.event.channel === listeningChannel) {
-      postToConsumerChannel(message.event.text)
+      postToConsumerChannel(message)
         .then(result => responder(res, { ...message, result } as Result))
         .catch(() =>
           responder(
@@ -39,12 +39,15 @@ export const messageRelay = functions.https.onRequest((req, res) => {
   }
 });
 
-function postToConsumerChannel(text: string): Promise<string | void> {
-  const whoToMention = `<!channel> `;
-  const template = `${whoToMention} (メッセージを転送しました)`;
-  const message = `${template}\n${text}`;
+function postToConsumerChannel(message: Message): Promise<string | void> {
+  const whoToMention = !message.event.thread_ts
+    ? `<!channel> `
+    : "(既存スレッド内)";
+  const head = `${whoToMention} (メッセージを転送しました)`;
+  const code = "```\n" + JSON.stringify(message, null, 2) + "\n```";
+  const text = `${head}\n${message.event.text}\n${code}`;
   return axios
-    .post(webhookUrl, { text: message })
+    .post(webhookUrl, { text })
     .then(() => "ok")
     .catch(console.error);
 }

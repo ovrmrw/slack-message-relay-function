@@ -8,6 +8,7 @@ export interface Message {
     text: string;
     user: string;
     ts: string;
+    thread_ts?: string;
     channel: string;
     event_ts: string;
     channel_type: string;
